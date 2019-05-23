@@ -1,0 +1,21 @@
+from calibre.web.feeds.news import BasicNewsRecipe
+import datetime
+
+class AdvancedUserRecipe1371743239(BasicNewsRecipe):
+    title          = u'The Walrus Mag'
+    description = 'National general interest magazine about Canada and its place in the world'
+    language = 'en'
+    __author__ = 'Brent'
+    oldest_article = 364
+    max_articles_per_feed = 100
+    auto_cleanup = True
+    auto_cleanup_keep = '//header'
+    curdate = datetime.date.today().strftime("%Y-%m")
+
+    feeds          = [("The Walrus Mag", "http://thewalrus.ca/category/issues/" + curdate + "/feed/"),
+		      ("The Walrus Mag", "http://thewalrus.ca/category/issues/" + curdate + "/feed/?paged=2")]
+
+    remove_tags = [dict(name='section', attrs={'class':['related-links','addthis_sharing_toolbox']}),
+		   dict(name='section', attrs={'id':'conversation'}),
+		   dict(name='div', attrs={'class':['pullquote','pullwrap']})]
+

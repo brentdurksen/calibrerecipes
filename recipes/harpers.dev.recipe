@@ -1,0 +1,76 @@
+__license__   = 'GPL v4'
+__copyright__ = '2016 Brent Durksen'
+'''
+harpers.org
+'''
+import string, re, datetime
+from calibre import strftime
+from calibre.web.feeds.recipes import BasicNewsRecipe
+from calibre.ebooks.BeautifulSoup import BeautifulSoup
+
+class Harpers(BasicNewsRecipe):
+    title                 = u"Harper's Magazine"
+    __author__            = u'Brent Durksen'
+    language              = 'en'
+    description           = u"Harper's Magazine: Founded June 1850."
+    publisher             = "Harper's Magazine "
+    category              = 'news, politics, USA'
+    no_stylesheets        = True
+    use_embedded_content  = False
+
+
+    keep_only_tags = [ dict(name='div', attrs={'class':'column1'}) ]
+    remove_tags = [
+                     dict(name='div', attrs={'class':['subHeaderArticle','tabDownloadPDF','tabMicrofiche','fRight','iconsLink','subscribe']})
+                    ,dict(name=['link','object','embed','meta','base'])
+                    ,dict(name='p', attrs={'class':'customLHight'})
+                  ]
+    remove_tags_after = dict(name='div', attrs={'class':'articlePost'})
+    remove_attributes = ['width','height']
+
+    def parse_index(self):
+        curyear = datetime.date.today().strftime("%Y")
+        curmonth = datetime.date.today().strftime("%m")
+        soup = self.index_to_soup('http://harpers.org/archive/' + curyear + '/' + curmonth + '/')
+
+        articles = {}
+        ans = []
+        for div in soup.findAll(True, attrs={'class':['articleData']}):
+            for h2 in div.findAll('h2'):
+                a = h2.find('a', href=True)
+                if not a:
+                    continue
+                url = a['href'] + '?single=1'
+                title = self.tag_to_string(a).strip()
+                ans.append(
+                    dict(title=title, url=url, date='', description='', content=''))
+        return [('Harpers', ans)]
+
+		
+    def get_cover_url(self):
+        cover_url = None
+        index = 'http://harpers.org/'
+        soup = self.index_to_soup(index)
+        link_item = soup.find(name = 'img',attrs= {'class':"cover"})
+        if link_item:
+           cover_url = 'http://harpers.org' + link_item['src']
+        return cover_url
+
+    def visible(element):
+        if element.parent.name in ['style', 'script', '[document]', 'head', 'title']:
+            return False
+        elif re.match('<!--.*-->', str(element)):
+            return False
+        return True
+
+    def preprocess_html(self, soup):
+        # Remove articles that are only available in PDF
+        if len(soup.findAll(text=re.compile('this article is available in', re.IGNORECASE))) > 0:
+            return None
+        print "ABOUT TO FINDALL"
+        wordcount = re.sub("(\<.*?\>)", "",soup)
+        wordcount = wordcount.split()
+        print "HERE'S THE COUNT:" + wordcount
+        #byline = soup.find_all('p', class_='byline')
+        #byline.insert(0, soup.newstring(" " + wordcount + " words"))
+        return soup
